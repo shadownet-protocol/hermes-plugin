@@ -1,0 +1,60 @@
+name: smoketest
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile __init__.py
+        run: python -m py_compile __init__.py
+      - name: Validate plugin.yaml
+        run: |
+          python -c "
+          import yaml
+          m = yaml.safe_load(open('plugin.yaml'))
+          assert m['name'] == 'shadownet', m
+          assert m['kind'] == 'platform', m
+          envs = m.get('requires_env') or []
+          names = [e['name'] if isinstance(e, dict) else e for e in envs]
+          assert 'SHADOWNET_CONNECT_URL' in names, names
+          print('OK')
+          "
+
+  bootstrap:
+    # Verifies the shim's pip-install + import-and-delegate path against a
+    # real PyPI release of shadownet-hermes-plugin. Catches the case where
+    # the upstream package was yanked, the pin no longer resolves, or the
+    # adapter's register() signature drifted.
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Bootstrap into a clean venv
+        run: |
+          python -c "
+          import importlib.util, sys
+          spec = importlib.util.spec_from_file_location('shim', '__init__.py')
+          shim = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(shim)
+          assert not shim._is_satisfied(), 'real package should be absent in a clean venv'
+          shim._pip_install()
+          assert shim._is_satisfied(), 'pip install ran but package still not satisfied'
+          import shadownet_hermes_plugin
+          assert callable(getattr(shadownet_hermes_plugin, 'register', None))
+          print('OK')
+          "
