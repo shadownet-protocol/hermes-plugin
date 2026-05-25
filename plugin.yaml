@@ -1,0 +1,18 @@
+name: shadownet
+version: "0.1.0"
+description: >-
+  Shadownet protocol integration for Hermes Agent. Install shim — bootstraps
+  the real adapter package (shadownet-hermes-plugin) from PyPI on first
+  register(), then registers the four Shadownet skills and the long-poll
+  platform adapter.
+
+kind: platform
+
+# Pre-set SHADOWNET_CONNECT_URL in ~/.hermes/.env before running
+# `hermes plugins install` and Hermes will skip this prompt entirely.
+# That is the one-paste install path served by <sidecar>/connect/hermes-agent.
+requires_env:
+  - name: SHADOWNET_CONNECT_URL
+    description: shadownet://connect?base=…&token=… URL minted at <your-sidecar>/connect/hermes-agent
+    url: https://github.com/shadownet-protocol/shadownet-specs
+    secret: true
