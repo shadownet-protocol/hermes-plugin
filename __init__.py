@@ -28,10 +28,10 @@ __all__ = ["register"]
 _log = logging.getLogger(__name__)
 
 _PACKAGE_NAME = "shadownet-hermes-plugin"
-# Compatible-release: accept 0.1.x patches transparently, require a shim
-# re-release for 0.2.x so a breaking adapter change can't propagate to
+# Compatible-release: accept 0.2.x patches transparently, require a shim
+# re-release for 0.3.x so a breaking adapter change can't propagate to
 # existing installs without an explicit bump here.
-_VERSION_SPECIFIER = "~=0.1.1"
+_VERSION_SPECIFIER = "~=0.2.0"
 _PACKAGE_SPEC = f"{_PACKAGE_NAME}{_VERSION_SPECIFIER}"
 _PIP_TIMEOUT_SECONDS = 300
 
