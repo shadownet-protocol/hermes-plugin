@@ -7,7 +7,9 @@ pip on the cloned tree. The real adapter ships on PyPI as
 
 ``register(ctx)`` ensures the PyPI package is importable at the version
 this shim pins, then delegates. If the package is missing or stale, we
-run pip into Hermes' active venv — the same algorithm Hermes' bundled
+install it into Hermes' active venv — preferring ``uv pip install`` over
+``python -m pip install`` because Hermes' default image ships a venv
+built by ``uv venv``, which omits pip. Same algorithm Hermes' bundled
 ``tools/lazy_deps.py:ensure()`` uses, open-coded here because the
 upstream allowlist is closed to third parties.
 
@@ -68,8 +70,29 @@ def _is_satisfied() -> bool:
         return True
 
 
+def _install_attempts() -> list[list[str]]:
+    """Ordered install commands to try, most-likely-to-succeed first."""
+    import importlib.util
+    import shutil
+
+    attempts: list[list[str]] = []
+    uv_bin = shutil.which("uv")
+    if uv_bin:
+        # uv-created venvs omit pip by default (the NousResearch hermes-agent
+        # image's default); `uv pip` works against any venv regardless.
+        attempts.append(
+            [uv_bin, "pip", "install", "--python", sys.executable, _PACKAGE_SPEC]
+        )
+    if importlib.util.find_spec("pip") is not None:
+        attempts.append([sys.executable, "-m", "pip", "install", _PACKAGE_SPEC])
+    return attempts
+
+
 def _pip_install() -> None:
     """Install ``_PACKAGE_SPEC`` into Hermes' active venv.
+
+    Tries ``uv pip install`` (when ``uv`` is on PATH) before ``python -m pip
+    install`` so the shim works on both uv- and pip-managed venvs.
 
     Honors ``HERMES_DISABLE_LAZY_INSTALLS=1`` (Hermes' documented opt-out
     for runtime installs) — if the user explicitly disabled lazy installs,
@@ -78,40 +101,57 @@ def _pip_install() -> None:
     if os.environ.get("HERMES_DISABLE_LAZY_INSTALLS") == "1":
         raise _ShimError(
             "Lazy installs disabled (HERMES_DISABLE_LAZY_INSTALLS=1). "
-            f"Install manually: {sys.executable} -m pip install {_PACKAGE_SPEC}"
+            "Install manually with whichever matches your Hermes venv:\n"
+            f"  uv pip install --python {sys.executable} {_PACKAGE_SPEC}\n"
+            f"  {sys.executable} -m pip install {_PACKAGE_SPEC}"
         )
 
-    cmd = [sys.executable, "-m", "pip", "install", _PACKAGE_SPEC]
-    _log.info("shadownet shim: %s", " ".join(cmd))
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=_PIP_TIMEOUT_SECONDS,
-        )
-    except subprocess.TimeoutExpired as e:
+    attempts = _install_attempts()
+    if not attempts:
         raise _ShimError(
-            f"pip install timed out after {_PIP_TIMEOUT_SECONDS}s. "
-            f"Retry manually: {' '.join(cmd)}"
-        ) from e
-
-    if result.returncode != 0:
-        tail = (result.stderr or result.stdout or "").strip()[-1500:]
-        raise _ShimError(
-            f"pip install failed (exit {result.returncode}):\n{tail}\n"
-            f"Retry manually: {' '.join(cmd)}"
+            "No installer available: neither `uv` (on PATH) nor `pip` "
+            f"(importable by {sys.executable}) was found in this Hermes venv. "
+            f"Install manually: <pip-or-uv> install {_PACKAGE_SPEC}"
         )
 
-    # importlib.metadata caches per-process; clear so the post-install
-    # _is_satisfied() check sees the fresh install.
-    try:
-        import importlib.metadata as _md
+    last_error: str | None = None
+    last_cmd: list[str] | None = None
+    for cmd in attempts:
+        _log.info("shadownet shim: %s", " ".join(cmd))
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=_PIP_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired as e:
+            raise _ShimError(
+                f"install timed out after {_PIP_TIMEOUT_SECONDS}s. "
+                f"Retry manually: {' '.join(cmd)}"
+            ) from e
 
-        if hasattr(_md, "_cache_clear"):
-            _md._cache_clear()  # type: ignore[attr-defined]
-    except Exception:
-        pass
+        if result.returncode == 0:
+            # importlib.metadata caches per-process; clear so the post-install
+            # _is_satisfied() check sees the fresh install.
+            try:
+                import importlib.metadata as _md
+
+                if hasattr(_md, "_cache_clear"):
+                    _md._cache_clear()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+            return
+
+        last_error = (result.stderr or result.stdout or "").strip()[-1500:]
+        last_cmd = cmd
+
+    raise _ShimError(
+        f"install failed (last exit nonzero from `{' '.join(last_cmd or [])}`):\n"
+        f"{last_error}\n"
+        "Tried in order:\n"
+        + "\n".join(f"  {' '.join(cmd)}" for cmd in attempts)
+    )
 
 
 def register(ctx: Any) -> None:

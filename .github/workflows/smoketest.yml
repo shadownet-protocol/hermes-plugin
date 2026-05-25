@@ -60,3 +60,31 @@ jobs:
           assert callable(getattr(shadownet_hermes_plugin, 'register', None))
           print('OK')
           "
+
+  bootstrap-uv:
+    # Regression for the uv-managed venv path: NousResearch's hermes-agent
+    # image ships a venv built by `uv venv`, which omits pip by default.
+    # The shim must use `uv pip` in that case, not `python -m pip`.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v3
+      - name: Build a pip-less venv with uv and run the shim inside it
+        run: |
+          uv venv .testenv --python 3.12
+          .testenv/bin/python -c "
+          import importlib.util
+          assert importlib.util.find_spec('pip') is None, 'expected uv-created venv to lack pip'
+          spec = importlib.util.spec_from_file_location('shim', '__init__.py')
+          shim = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(shim)
+          assert not shim._is_satisfied(), 'real package should be absent in clean venv'
+          shim._pip_install()
+          assert shim._is_satisfied(), 'install ran but package still not satisfied'
+          import shadownet_hermes_plugin
+          assert callable(getattr(shadownet_hermes_plugin, 'register', None))
+          print('OK uv-bootstrap')
+          "

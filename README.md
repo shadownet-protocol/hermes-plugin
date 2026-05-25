@@ -36,18 +36,20 @@ because the upstream allowlist is closed to third parties.
 
 ## Tradeoffs
 
-- **First start is slow** (~10–30s pip install). One-time per install.
-- **Requires pip in Hermes' venv.** True for nearly all installs. If
-  `HERMES_DISABLE_LAZY_INSTALLS=1` is set, the shim refuses and prints
-  the manual `pip install` command instead.
+- **First start is slow** (~10–30s install). One-time per install.
+- **Requires `uv` or `pip` in the Hermes container.** The shim tries
+  `uv pip install` first (matches the NousResearch image, whose venv is
+  built by `uv venv` and omits pip), then falls back to `python -m pip
+  install`. If `HERMES_DISABLE_LAZY_INSTALLS=1` is set, the shim refuses
+  and prints both manual install commands instead.
 - **Two artifacts to release.** Shim version (`plugin.yaml`) tracks shim
   changes only; the adapter ships independently on PyPI.
 
 ## Version policy
 
 The shim pins the PyPI package with a compatible-release specifier
-(`~=0.1.1`): patches in the 0.1.x line flow transparently to users on
-their next gateway restart, but a 0.2.x release requires bumping the pin
+(`~=0.2.0`): patches in the 0.2.x line flow transparently to users on
+their next gateway restart, but a 0.3.x release requires bumping the pin
 in this repo and cutting a new shim release.
 
 ## License
