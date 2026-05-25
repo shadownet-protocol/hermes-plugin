@@ -42,8 +42,48 @@ because the upstream allowlist is closed to third parties.
   built by `uv venv` and omits pip), then falls back to `python -m pip
   install`. If `HERMES_DISABLE_LAZY_INSTALLS=1` is set, the shim refuses
   and prints both manual install commands instead.
+- **Bypasses `exclude-newer` only if needed.** See
+  [the section below](#exclude-newer).
 - **Two artifacts to release.** Shim version (`plugin.yaml`) tracks shim
   changes only; the adapter ships independently on PyPI.
+
+## exclude-newer
+
+The NousResearch `hermes-agent` image sets uv's
+[`exclude-newer`](https://docs.astral.sh/uv/reference/settings/#exclude-newer)
+in `/opt/hermes/pyproject.toml` to its image build date. uv reads that
+when invoked from `/opt/hermes` (where the gateway runs), and treats it
+as "pretend PyPI has no releases newer than this date." It's a legitimate
+reproducibility / supply-chain defense for Hermes' own deps.
+
+The side-effect: any plugin released after the image was built — like
+ours, every time we ship a new version — is invisible to uv inside the
+container. The shim's `uv pip install` will fail with `No solution
+found … only <old-version> is available`.
+
+When the shim detects that failure pattern, it logs a `WARNING` line
+naming the bypass and retries the install with
+`--exclude-newer 9999-12-31T23:59:59Z` (effectively disabling the lock
+for this one package). Install succeeds; operators see the deviation
+in the logs.
+
+If you'd rather not have the shim deviate from `exclude-newer` at all,
+the recommended pattern is to **bake the adapter into a custom Hermes
+image at your chosen version** so it's installed at *your* build time
+(under your own reproducibility constraints) and the shim's runtime
+install short-circuits via `_is_satisfied()`:
+
+```dockerfile
+FROM nousresearch/hermes-agent:latest
+USER hermes
+RUN uv pip install \
+      --python /opt/hermes/.venv/bin/python3 \
+      --exclude-newer 9999-12-31T23:59:59Z \
+      'shadownet-hermes-plugin~=0.2.0'
+```
+
+(The `--exclude-newer` override is needed at build time too — same
+reason, same fix.)
 
 ## Version policy
 
