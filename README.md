@@ -88,12 +88,15 @@ reason, same fix.)
 ## Version policy
 
 The shim pins the PyPI package with a compatible-release specifier
-(`~=0.2.3`): patches in the 0.2.x line ≥ 0.2.3 flow transparently to
+(`~=0.2.4`): patches in the 0.2.x line ≥ 0.2.4 flow transparently to
 users on their next gateway restart, but a 0.3.x release requires
 bumping the pin in this repo and cutting a new shim release. The floor
-was raised from 0.2.0 to 0.2.3 because 0.2.0–0.2.2 had a split-host MCP
-URL bug; the shim will force a re-install on installs that still have
-0.2.0–0.2.2 in the venv.
+has been raised twice — first to 0.2.3 (split-host MCP URL bug in
+0.2.0–0.2.2) and then to 0.2.4 (0.2.3 registered skills via
+`ctx.register_skill` but did not materialize the SKILL.md files into
+`~/.hermes/skills/`, so the agent's skill-loader did not surface them).
+The shim forces a re-install on existing installs that still have a
+buggy version in the venv.
 
 ## License
 
