@@ -33,10 +33,16 @@ __all__ = ["register"]
 _log = logging.getLogger(__name__)
 
 _PACKAGE_NAME = "shadownet-hermes-plugin"
-# Compatible-release: accept 0.2.x patches transparently, require a shim
-# re-release for 0.3.x so a breaking adapter change can't propagate to
-# existing installs without an explicit bump here.
-_VERSION_SPECIFIER = "~=0.2.0"
+# Compatible-release: accept 0.2.x patches ≥ 0.2.3 transparently, require
+# a shim re-release for 0.3.x so a breaking adapter change can't propagate
+# to existing installs without an explicit bump here. Floor raised from
+# 0.2.0 to 0.2.3 because 0.2.0–0.2.2 had a split-host MCP URL bug: the
+# adapter synthesized `{base}/u/{shadowname}/mcp` from the connect URL's
+# `base=` instead of using the bundle's `mcp_endpoint` field. Sidecars
+# that serve MCP from a different host than the dashboard (e.g.,
+# `api.example.org` for MCP vs `app.example.org` for the bundle endpoint)
+# would 405 on the wrong host.
+_VERSION_SPECIFIER = "~=0.2.3"
 _PACKAGE_SPEC = f"{_PACKAGE_NAME}{_VERSION_SPECIFIER}"
 _PIP_TIMEOUT_SECONDS = 300
 
