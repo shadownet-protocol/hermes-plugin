@@ -63,7 +63,7 @@ found … only <old-version> is available`.
 
 When the shim detects that failure pattern, it logs a `WARNING` line
 naming the bypass and retries the install with
-`--exclude-newer 9999-12-31T23:59:59Z` (effectively disabling the lock
+`--exclude-newer 2999-12-31` (effectively disabling the lock
 for this one package). Install succeeds; operators see the deviation
 in the logs.
 
@@ -78,7 +78,7 @@ FROM nousresearch/hermes-agent:latest
 USER hermes
 RUN uv pip install \
       --python /opt/hermes/.venv/bin/python3 \
-      --exclude-newer 9999-12-31T23:59:59Z \
+      --exclude-newer 2999-12-31 \
       'shadownet-hermes-plugin~=0.2.0'
 ```
 

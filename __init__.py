@@ -145,7 +145,7 @@ def _pip_install() -> None:
 
     If every attempt fails AND the failure looks like Hermes' ``exclude-newer``
     reproducibility lock blocking the requested version range, the shim logs
-    a WARNING and retries once with ``--exclude-newer 9999-12-31T23:59:59Z``
+    a WARNING and retries once with ``--exclude-newer 2999-12-31``
     to bypass the lock for this package only. The bypass is loud-on-purpose:
     operators who care about supply-chain hygiene should see in the logs that
     we deviated from the image's reproducibility setting and respond by baking
@@ -193,7 +193,7 @@ def _pip_install() -> None:
             "shadownet shim: install of `%s` appears blocked by Hermes' uv "
             "`exclude-newer` reproducibility lock (set by the image to its "
             "build date in /opt/hermes/pyproject.toml). Retrying once with "
-            "`--exclude-newer 9999-12-31T23:59:59Z` to bypass the lock for "
+            "`--exclude-newer 2999-12-31` to bypass the lock for "
             "this package only. To avoid this deviation on every restart, "
             "bake the plugin into a custom Hermes image at your chosen "
             "version (see "
@@ -207,7 +207,7 @@ def _pip_install() -> None:
             "--python",
             sys.executable,
             "--exclude-newer",
-            "9999-12-31T23:59:59Z",
+            "2999-12-31",
             _PACKAGE_SPEC,
         ]
         rc, err = _run_install(cmd)
