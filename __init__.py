@@ -59,7 +59,12 @@ _PACKAGE_NAME = "shadownet-hermes-plugin"
 #     registered platform, and a real logout flow that clears
 #     SHADOWNET_CONNECT_URL from `~/.hermes/.env` and removes
 #     `mcp_servers.shadownet` from `~/.hermes/config.yaml`.
-_VERSION_SPECIFIER = "~=0.4.0"
+#   - 0.4.0: passed `env_enablement_fn` / `platform_hint` kwargs to
+#     `ctx.register_platform`, which older Hermes runtimes' PlatformEntry
+#     rejects with TypeError, aborting plugin load entirely. 0.4.1 wraps
+#     the call so unknown kwargs are dropped one-by-one and the platform
+#     still registers on those runtimes.
+_VERSION_SPECIFIER = "~=0.4.1"
 _PACKAGE_SPEC = f"{_PACKAGE_NAME}{_VERSION_SPECIFIER}"
 _PIP_TIMEOUT_SECONDS = 300
 
