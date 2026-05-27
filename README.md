@@ -79,7 +79,7 @@ USER hermes
 RUN uv pip install \
       --python /opt/hermes/.venv/bin/python3 \
       --exclude-newer 2999-12-31 \
-      'shadownet-hermes-plugin~=0.2.0'
+      'shadownet-hermes-plugin~=0.4.0'
 ```
 
 (The `--exclude-newer` override is needed at build time too — same
@@ -88,16 +88,18 @@ reason, same fix.)
 ## Version policy
 
 The shim pins the PyPI package with a compatible-release specifier
-(`~=0.3.0`): patches in the 0.3.x line flow transparently to users on
-their next gateway restart, but a 0.4.x release requires bumping the
+(`~=0.4.0`): patches in the 0.4.x line flow transparently to users on
+their next gateway restart, but a 0.5.x release requires bumping the
 pin in this repo and cutting a new shim release. The floor has been
-raised three times — to 0.2.3 (fix split-host MCP URL bug in
+raised four times — to 0.2.3 (fix split-host MCP URL bug in
 0.2.0–0.2.2), to 0.2.4 (fix skills not materialized into Hermes's data
-dir), and to 0.3.0 (categorized skill layout under
+dir), to 0.3.0 (categorized skill layout under
 `~/.hermes/skills/shadownet/`, wire `task.update` event handling,
-auto-load the `shadownet-coordinate` skill on synthetic sessions).
-The shim forces a re-install on existing installs that still have a
-buggy version in the venv.
+auto-load the `shadownet-coordinate` skill on synthetic sessions), and
+to 0.4.0 (every canonical Hermes plugin surface: slash commands,
+on_session_start + pre_llm_call hooks, `hermes shadownet` CLI subcommand,
+platform_hint, real logout flow). The shim forces a re-install on
+existing installs that still have an older version in the venv.
 
 ## License
 

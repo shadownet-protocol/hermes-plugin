@@ -33,9 +33,9 @@ __all__ = ["register"]
 _log = logging.getLogger(__name__)
 
 _PACKAGE_NAME = "shadownet-hermes-plugin"
-# Compatible-release: accept 0.3.x patches transparently, require a shim
-# re-release for 0.4.x so a breaking adapter change can't propagate to
-# existing installs without an explicit bump here. Floor raised to 0.3.0
+# Compatible-release: accept 0.4.x patches transparently, require a shim
+# re-release for 0.5.x so a breaking adapter change can't propagate to
+# existing installs without an explicit bump here. Floor raised to 0.4.0
 # because:
 #   - 0.2.0–0.2.2: split-host MCP URL bug. The adapter synthesized
 #     `{base}/u/{shadowname}/mcp` from the connect URL's `base=` instead
@@ -52,7 +52,14 @@ _PACKAGE_NAME = "shadownet-hermes-plugin"
 #     they cluster in the `hermes skills list` output, AND wires the
 #     `task.update` event branch (previously dropped) so intent
 #     state-changes flow into the user's primary session.
-_VERSION_SPECIFIER = "~=0.3.0"
+#   - 0.3.0–0.3.1: missing canonical Hermes surfaces. 0.4.0 adds explicit
+#     slash commands (/shadownet-{setup,inbox,reach-out,coordinate,
+#     status,logout}), on_session_start + pre_llm_call hooks, a
+#     `hermes shadownet` CLI subcommand tree, platform_hint on the
+#     registered platform, and a real logout flow that clears
+#     SHADOWNET_CONNECT_URL from `~/.hermes/.env` and removes
+#     `mcp_servers.shadownet` from `~/.hermes/config.yaml`.
+_VERSION_SPECIFIER = "~=0.4.0"
 _PACKAGE_SPEC = f"{_PACKAGE_NAME}{_VERSION_SPECIFIER}"
 _PIP_TIMEOUT_SECONDS = 300
 
