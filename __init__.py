@@ -33,9 +33,9 @@ __all__ = ["register"]
 _log = logging.getLogger(__name__)
 
 _PACKAGE_NAME = "shadownet-hermes-plugin"
-# Compatible-release: accept 0.4.x patches transparently, require a shim
-# re-release for 0.5.x so a breaking adapter change can't propagate to
-# existing installs without an explicit bump here. Floor raised to 0.4.0
+# Compatible-release: accept 0.5.x patches transparently, require a shim
+# re-release for 0.6.x so a breaking adapter change can't propagate to
+# existing installs without an explicit bump here. Floor raised to 0.5.0
 # because:
 #   - 0.2.0–0.2.2: split-host MCP URL bug. The adapter synthesized
 #     `{base}/u/{shadowname}/mcp` from the connect URL's `base=` instead
@@ -64,7 +64,18 @@ _PACKAGE_NAME = "shadownet-hermes-plugin"
 #     rejects with TypeError, aborting plugin load entirely. 0.4.1 wraps
 #     the call so unknown kwargs are dropped one-by-one and the platform
 #     still registers on those runtimes.
-_VERSION_SPECIFIER = "~=0.4.1"
+#   - 0.4.x: Shadownet v0.1 wire protocol. 0.5.0 is the v0.2 protocol cut
+#     — a hard breaking change requiring a v0.2 Sidecar and the
+#     `shadownet>=0.5.0` SDK. The adapter drops the v0.1 MCP tool surface
+#     (`social_*` names, `data_type`/`intentId` event shapes) for the
+#     RFC 0002 §4 tool names and intent-URI taxonomy, routes all calls
+#     through the typed `ShadownetMCPClient`, and removes the
+#     `IntegrationBundle` fetch (the connect URI now carries the MCP
+#     endpoint + token directly per RFC 0003 §3). Loading 0.5.x against a
+#     v0.1 Sidecar fails, so the floor is raised to keep the shim install
+#     in lockstep with the operator's Sidecar migration; v0.1 holdouts
+#     should pin `shadownet-hermes-plugin<0.5`.
+_VERSION_SPECIFIER = "~=0.5.0"
 _PACKAGE_SPEC = f"{_PACKAGE_NAME}{_VERSION_SPECIFIER}"
 _PIP_TIMEOUT_SECONDS = 300
 

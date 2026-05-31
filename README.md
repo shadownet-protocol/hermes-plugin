@@ -9,7 +9,7 @@ Mint your `SHADOWNET_CONNECT_URL` at `<your-sidecar>/connect/hermes-agent`,
 then paste:
 
 ```sh
-echo 'SHADOWNET_CONNECT_URL=shadownet://connect?base=<sidecar>&token=<token>' >> ~/.hermes/.env \
+echo 'SHADOWNET_CONNECT_URL=shadow://connect?mcp=<mcp-endpoint>&token=<token>' >> ~/.hermes/.env \
   && hermes plugins install shadownet-protocol/hermes-plugin --enable \
   && hermes gateway restart
 ```
@@ -79,7 +79,7 @@ USER hermes
 RUN uv pip install \
       --python /opt/hermes/.venv/bin/python3 \
       --exclude-newer 2999-12-31 \
-      'shadownet-hermes-plugin~=0.4.1'
+      'shadownet-hermes-plugin~=0.5.0'
 ```
 
 (The `--exclude-newer` override is needed at build time too — same
@@ -88,21 +88,28 @@ reason, same fix.)
 ## Version policy
 
 The shim pins the PyPI package with a compatible-release specifier
-(`~=0.4.1`): patches in the 0.4.x line flow transparently to users on
-their next gateway restart, but a 0.5.x release requires bumping the
+(`~=0.5.0`): patches in the 0.5.x line flow transparently to users on
+their next gateway restart, but a 0.6.x release requires bumping the
 pin in this repo and cutting a new shim release. The floor has been
-raised five times — to 0.2.3 (fix split-host MCP URL bug in
+raised six times — to 0.2.3 (fix split-host MCP URL bug in
 0.2.0–0.2.2), to 0.2.4 (fix skills not materialized into Hermes's data
 dir), to 0.3.0 (categorized skill layout under
 `~/.hermes/skills/shadownet/`, wire `task.update` event handling,
 auto-load the `shadownet-coordinate` skill on synthetic sessions), to
 0.4.0 (every canonical Hermes plugin surface: slash commands,
 on_session_start + pre_llm_call hooks, `hermes shadownet` CLI subcommand,
-platform_hint, real logout flow), and to 0.4.1 (force re-install on
+platform_hint, real logout flow), to 0.4.1 (force re-install on
 0.4.0 installs that hit `PlatformEntry.__init__() got an unexpected
 keyword argument 'env_enablement_fn'` on older Hermes runtimes — 0.4.1
-drops unknown kwargs and retries). The shim forces a re-install on
-existing installs that still have an older version in the venv.
+drops unknown kwargs and retries), and to 0.5.0 (the **Shadownet v0.2
+protocol cut** — a hard breaking change: RFC 0002 §4 tool names without
+the `social_` prefix, intent-URI event taxonomy in place of v0.1
+`data_type`/`intentId`, all calls through the typed `ShadownetMCPClient`,
+and the connect URI carrying the MCP endpoint + token directly per
+RFC 0003 §3. Requires a v0.2 Sidecar and `shadownet>=0.5.0`; v0.1
+holdouts should pin `shadownet-hermes-plugin<0.5`). The shim forces a
+re-install on existing installs that still have an older version in the
+venv.
 
 ## License
 
